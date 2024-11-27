@@ -1,16 +1,22 @@
-import socket
+import requests
+from PIL import Image
+from io import BytesIO
 
-def start_client():
-    host = '127.0.0.1'
-    port = 65432
-    
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
-        client_socket.connect((host, port))
-        num1 = input("Nhập số thứ nhất: ")
-        num2 = input("Nhập số thứ hai: ")
-        client_socket.sendall(f"{num1} {num2}".encode())
-        result = client_socket.recv(1024).decode()
-        print(f"Tổng là: {result}")
-        
+def generate_qr(text):
+    url = "http://localhost:5000/generate_qr"
+    headers = {"Content-Type": "application/json"}
+    data = {"text": text}
+
+    # Gửi yêu cầu POST đến server
+    response = requests.post(url, json=data, headers=headers)
+    if response.status_code == 200:
+        # Nhận mã QR dưới dạng ảnh PNG
+        img = Image.open(BytesIO(response.content))
+        img.show()  # Hiển thị mã QR
+        # img.save("qr_code.png")  # Lưu mã QR nếu muốn
+    else:
+        print("Failed to generate QR code:", response.text)
+
 if __name__ == "__main__":
-    start_client()
+    text = input("Enter text or URL to generate QR: ")
+    generate_qr(text)

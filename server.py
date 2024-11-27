@@ -1,22 +1,29 @@
-import socket
+from flask import Flask, request, send_file
+import qrcode
+import io
 
-def start_server():
-    host = '127.0.0.1'
-    port = 65432
+app = Flask(__name__)
+
+@app.route('/generate_qr', methods=['POST'])
+def generate_qr():
+    data = request.json.get("text")
+    if not data:
+        return {"error": "No text provided"}, 400
+
+    # Tạo mã QR
+    qr = qrcode.make(data)
     
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
-        server_socket.bind((host, port))  
-        server_socket.listen()
-        print(f"SERVER is listening on {host}:{port}")
-        
-        conn, addr = server_socket.accept()   
-        with conn:
-            print(f"Connected by {addr}")
-            data = conn.recv(1024).decode()
-            if data:
-                num1, num2 = map(int, data.split())
-                result = num1 + num2
-                conn.sendall(str(result).encode())
-                
-if __name__ == "__main__":
-    start_server()
+    # Lưu mã QR vào máy dưới dạng file PNG
+    qr.save("qr_code.png")
+    print("Mã QR đã được lưu với tên 'qr_code.png'")
+
+    # Lưu ảnh QR vào bộ nhớ tạm để gửi cho client
+    img_io = io.BytesIO()
+    qr.save(img_io, 'PNG')
+    img_io.seek(0)
+
+    # Trả về ảnh QR dưới dạng ảnh PNG cho client
+    return send_file(img_io, mimetype='image/png')
+
+if __name__ == '__main__':
+    app.run(debug=True)
